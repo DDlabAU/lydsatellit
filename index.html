@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#192d29">
+  <title>AU Soundsatellites</title>
+  <style>
+    :root { color-scheme: light; --ink:#192d29; --paper:#f3f2ea; --muted:#5d6b64; --line:#cbd0c5; --accent:#d1eb70; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font-family:Arial,Helvetica,sans-serif; }
+    button,a,audio { -webkit-tap-highlight-color:transparent; }
+    button:focus-visible,a:focus-visible,audio:focus-visible { outline:3px solid #527527; outline-offset:6px; }
+    .wrap { max-width:1180px; margin:auto; padding:0 48px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:30px 0; border-bottom:1px solid var(--line); }
+    .header-actions { display:flex; align-items:center; gap:20px; flex-wrap:wrap; justify-content:flex-end; }
+    #fullscreen { min-height:48px; padding:12px 18px; border:1px solid var(--ink); border-radius:10px; background:var(--ink); color:var(--paper); font:inherit; font-size:14px; font-weight:700; cursor:pointer; }
+    #fullscreen:hover { background:#324c40; }
+    #fullscreen-message { color:var(--muted); font-size:12px; line-height:1.5; text-align:right; }
+    #fullscreen-message:empty { display:none; }
+    html:fullscreen { overflow:auto; background:var(--paper); }
+    .brand { display:flex; align-items:center; gap:12px; font-size:14px; font-weight:700; letter-spacing:.03em; }
+    .mark { display:flex; gap:3px; align-items:center; height:25px; }
+    .mark i { display:block; width:3px; background:var(--ink); height:13px; }
+    .mark i:nth-child(2),.mark i:nth-child(4) { height:22px; }
+    .mark i:nth-child(3) { height:30px; }
+    a { color:inherit; text-underline-offset:5px; }
+    header a { font-size:13px; }
+    .intro { padding:64px 0 48px; display:grid; grid-template-columns:1.3fr 1fr; gap:55px; align-items:end; }
+    .eyebrow { font-size:11px; text-transform:uppercase; letter-spacing:.16em; font-weight:700; margin:0 0 20px; }
+    .intro > div { min-width:0; container-type:inline-size; }
+    h1 { font-size:clamp(24px,4vw,60px); font-size:min(60px,10.5cqw); line-height:1.03; white-space:nowrap; letter-spacing:-.055em; margin:0; font-weight:500; }
+    .description { color:var(--muted); line-height:1.7; font-size:16px; margin:0; max-width:420px; }
+    .section-label { display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--line); padding:20px 0; font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
+    .section-label span:last-child { color:var(--muted); letter-spacing:0; text-transform:none; font-size:12px; }
+    .streams { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .stream { display:flex; flex-direction:column; position:relative; text-align:left; cursor:pointer; border:2px solid #809078; border-radius:18px; background:linear-gradient(#ffffff,#e8eddf); box-shadow:0 6px 0 #829076,0 10px 18px #192d2914; color:var(--ink); padding:25px; min-height:228px; font:inherit; transition:background .18s,border-color .18s,transform .18s,box-shadow .18s; }
+    .stream:hover { background:#edf4de; border-color:#536849; transform:translateY(-2px); box-shadow:0 8px 0 #829076,0 12px 20px #192d2920; }
+    .stream:active { transform:translateY(5px); box-shadow:0 1px 0 #829076; }
+    .stream[aria-pressed="true"] { background:var(--accent); border-color:var(--ink); box-shadow:0 2px 0 var(--ink),inset 0 2px 5px #192d291a; transform:translateY(4px); }
+    .stream-top { width:100%; display:flex; justify-content:space-between; align-items:center; font-size:11px; letter-spacing:.1em; }
+    .arrow { font-size:25px; line-height:1; font-weight:400; }
+    .stream h2 { font-size:32px; font-weight:500; letter-spacing:-.04em; margin:22px 0 12px; overflow-wrap:anywhere; }
+    .stream p { margin:0; line-height:1.6; font-size:13px; color:#526257; }
+    .stream-action { display:block; padding:12px 18px; border-radius:30px; background:var(--ink); color:white; margin-top:24px; font-size:12px; font-weight:700; }
+    #availability-note { color:var(--muted); font-size:12px; line-height:1.6; margin:24px 0 0; }
+    .availability { display:inline-block; align-self:flex-start; font-size:11px; font-weight:700; margin:18px 0 0; padding:6px 10px; border-radius:20px; background:#e2e5de; color:#49554a; }
+    [data-availability="online"] .availability { background:#d6eac9; color:#234b21; }
+    [data-availability="offline"] .availability { background:#eee4d8; color:#694b2d; }
+    .stream p { flex:1; }
+    .player { margin-top:28px; padding:28px 30px; border-radius:5px; background:var(--ink); color:var(--paper); display:grid; grid-template-columns:1fr 1.2fr; gap:28px; align-items:center; }
+    .player .eyebrow { color:#c5d2be; margin-bottom:12px; font-size:10px; }
+    .player-title { font-size:21px; letter-spacing:-.02em; margin:0 0 9px; }
+    #status { margin:0; font-size:12px; line-height:1.6; color:#d4ded0; }
+    audio { width:100%; display:block; }
+    .player-controls { display:flex; align-items:center; gap:15px; }
+    #stop { min-height:44px; background:transparent; border:1px solid #809084; color:var(--paper); padding:0 15px; border-radius:4px; font:inherit; font-size:12px; cursor:pointer; }
+    #stop:disabled { opacity:.45; cursor:default; }
+    .notes { display:grid; grid-template-columns:1fr 2fr; gap:40px; margin:45px 0 58px; }
+    .notes h2 { margin:0; font-size:16px; font-weight:500; }
+    .notes p { font-size:13px; line-height:1.8; color:var(--muted); margin:0; max-width:600px; }
+    footer { border-top:1px solid var(--line); padding:22px 0 30px; display:flex; justify-content:space-between; gap:20px; color:var(--muted); font-size:11px; }
+    @media(max-width:720px) { .wrap { padding:0 22px; } .intro { grid-template-columns:1fr; gap:26px; padding:43px 0 35px; } .streams { grid-template-columns:1fr; gap:12px; } .stream { min-height:0; padding:20px; } .stream h2 { margin-top:18px; } .stream-action { margin-top:18px; } .player { grid-template-columns:1fr; padding:25px 20px; } .notes { grid-template-columns:1fr; gap:15px; margin:35px 0; } header a { font-size:11px; } footer { flex-wrap:wrap; } }
+    @media(prefers-reduced-motion:reduce) { * { transition:none!important; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span> AUDIO STREAM NETWORK</div>
+      <div class="header-actions">
+        <a href="https://icecast.projects.cavi.au.dk" target="_blank" rel="noopener noreferrer">Stream overview ↗</a>
+        <button id="fullscreen" type="button" aria-pressed="false">⛶ Full screen</button>
+      </div>
+    </header>
+    <p id="fullscreen-message" role="status" aria-live="polite"></p>
+    <main>
+      <section class="intro" aria-labelledby="title">
+        <div><h1 id="title">AU Soundsatellites</h1></div>
+        <!-- EDIT: Replace this introductory text with your project description. -->
+        <p class="description">Listen to soundscapes around Aarhus, as they unfold right now.</p>
+      </section>
+      <div class="section-label"><span>Choose your stream</span><span>01 — 03</span></div>
+      <section class="streams" aria-label="Available stream choices">
+        <button class="stream" type="button" data-name="Lydsat A" data-url="https://icecast.projects.cavi.au.dk/lydsata" aria-pressed="false" aria-controls="audio">
+          <span class="stream-top"><span>CHANNEL 01</span><span class="arrow" aria-hidden="true">↗</span></span>
+          <span class="availability">Checking…</span>
+          <h2>Lydsat A</h2><p>Audio stream / A</p><span class="stream-action">Listen to stream →</span>
+        </button>
+        <button class="stream" type="button" data-name="Lydsat B" data-url="https://icecast.projects.cavi.au.dk/lydsatb" aria-pressed="false" aria-controls="audio">
+          <span class="stream-top"><span>CHANNEL 02</span><span class="arrow" aria-hidden="true">↗</span></span>
+          <span class="availability">Checking…</span>
+          <h2>Lydsat B</h2><p>Audio stream / B</p><span class="stream-action">Listen to stream →</span>
+        </button>
+        <button class="stream" type="button" data-name="AU SoundSatellite No.3" data-url="https://icecast.projects.cavi.au.dk/lydsatc" aria-pressed="false" aria-controls="audio">
+          <span class="stream-top"><span>CHANNEL 03 · LYDSAT C</span><span class="arrow" aria-hidden="true">↗</span></span>
+          <span class="availability">Checking…</span>
+          <h2>AU SoundSatellite No.3</h2><p>Location Gyllingnaes, East Jutland. Garden birds hanging out in sheltered feeding nest</p><span class="stream-action">Listen to stream →</span>
+        </button>
+      </section>
+      <p id="availability-note" role="status" aria-live="polite">Checking stream availability…</p>
+      <section class="player" aria-label="Audio player">
+        <div><p class="eyebrow">Your listening space</p><p class="player-title" id="now-playing">Ready when you are.</p><p id="status" role="status" aria-live="polite">Select a stream to start listening.</p></div>
+        <div class="player-controls"><audio id="audio" controls preload="none" aria-label="Selected stream audio player">Your browser does not support HTML audio.</audio><button id="stop" type="button" disabled>Stop</button></div>
+      </section>
+      <section class="notes" aria-labelledby="about-title">
+        <h2 id="about-title">About the network</h2>
+        <!-- EDIT: Add context about the project, locations, or what listeners can expect here. -->
+        <p>Each channel offers a different connection to the audio network. Move between streams to explore, or stay with one and let it unfold. Streams may occasionally be offline; if one is unavailable, try another or return later.</p>
+      </section>
+      <noscript><p>Enable JavaScript to use the stream buttons, or open <a href="https://icecast.projects.cavi.au.dk/lydsata">Lydsat A</a>, <a href="https://icecast.projects.cavi.au.dk/lydsatb">Lydsat B</a>, or <a href="https://icecast.projects.cavi.au.dk/lydsatc">Lydsat C</a> directly.</p></noscript>
+    </main>
+    <footer><span>Audio Stream Network</span><span>Choose a channel. Take a moment. Listen.</span></footer>
+  </div>
+  <script>
+    const fullscreenButton = document.getElementById('fullscreen');
+    const fullscreenMessage = document.getElementById('fullscreen-message');
+    function updateFullscreenButton() {
+      const active = Boolean(document.fullscreenElement);
+      fullscreenButton.textContent = active ? '⛶ Exit full screen' : '⛶ Full screen';
+      fullscreenButton.setAttribute('aria-pressed', String(active));
+    }
+    fullscreenButton.addEventListener('click', async () => {
+      fullscreenMessage.textContent = '';
+      if (!document.fullscreenEnabled || !document.documentElement.requestFullscreen) {
+        fullscreenMessage.textContent = 'Full screen is not available here. Use the browser’s full-screen option instead.';
+        return;
+      }
+      try {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else await document.documentElement.requestFullscreen();
+      } catch (error) {
+        fullscreenMessage.textContent = 'Could not switch full screen. Try again or use the browser’s full-screen option.';
+      }
+      updateFullscreenButton();
+    });
+    document.addEventListener('fullscreenchange', updateFullscreenButton);
+    updateFullscreenButton();
+
+    const audio = document.getElementById('audio');
+    const status = document.getElementById('status');
+    const title = document.getElementById('now-playing');
+    const stop = document.getElementById('stop');
+    const buttons = [...document.querySelectorAll('.stream')];
+    let selected = null;
+    let generation = 0;
+    let connectionTimer;
+    const say = message => { status.textContent = message; };
+    function clearTimer() { clearTimeout(connectionTimer); }
+    function selectStream(button) {
+      const attempt = ++generation;
+      clearTimer();
+      selected = null;
+      audio.pause();
+      selected = button;
+      buttons.forEach(item => {
+        const active = item === button;
+        item.setAttribute('aria-pressed', String(active));
+        item.querySelector('.stream-action').textContent = active ? 'Selected · click to reconnect ↻' : 'Listen to stream →';
+      });
+      title.textContent = button.dataset.name;
+      stop.disabled = false;
+      audio.src = button.dataset.url;
+      audio.load();
+      say('Connecting to ' + button.dataset.name + '…');
+      connectionTimer = setTimeout(() => {
+        if (attempt === generation) say('This is taking longer than expected. Try another stream or click this channel to reconnect.');
+      }, 15000);
+      audio.play().catch(error => {
+        if (attempt !== generation || error.name === 'AbortError') return;
+        clearTimer();
+        say(error.name === 'NotAllowedError' ? 'Press play in the audio player to begin.' : 'Unable to play this stream. It may be offline or unsupported. Try another channel or click to retry.');
+      });
+    }
+    buttons.forEach(button => button.addEventListener('click', () => selectStream(button)));
+    audio.addEventListener('playing', () => { if (selected) { clearTimer(); say('Playing ' + selected.dataset.name + '.'); } });
+    audio.addEventListener('waiting', () => { if (selected) say('Buffering audio…'); });
+    audio.addEventListener('pause', () => { if (selected && !audio.error) { clearTimer(); say('Paused. Press play to continue.'); } });
+    audio.addEventListener('error', () => { if (selected && audio.error) { clearTimer(); say('Stream unavailable. Try another channel or click this channel to reconnect.'); } });
+    audio.addEventListener('ended', () => { if (selected) { clearTimer(); say('The stream has ended. Click the channel to reconnect.'); } });
+    stop.addEventListener('click', () => {
+      ++generation;
+      clearTimer();
+      selected = null;
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+      buttons.forEach(button => { button.setAttribute('aria-pressed', 'false'); button.querySelector('.stream-action').textContent = 'Listen to stream →'; });
+      title.textContent = 'Ready when you are.';
+      say('Stopped. Select a stream to start listening.');
+      stop.disabled = true;
+    });
+
+    // Read Icecast metadata without connecting to or interrupting the audio streams.
+    const availabilityNote = document.getElementById('availability-note');
+    const statusURL = 'https://icecast.projects.cavi.au.dk/status-json.xsl';
+    const refreshMilliseconds = 30000;
+    let checking = false;
+    async function refreshAvailability() {
+      if (checking) return;
+      checking = true;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      try {
+        const response = await fetch(statusURL, { cache: 'no-store', signal: controller.signal });
+        if (!response.ok) throw new Error('Status request failed');
+        const data = await response.json();
+        if (!data.icestats || typeof data.icestats !== 'object') throw new Error('Invalid status feed');
+        const raw = data.icestats.source;
+        const sources = raw == null ? [] : Array.isArray(raw) ? raw : [raw];
+        if (sources.some(source => !source || typeof source.listenurl !== 'string')) throw new Error('Invalid stream list');
+        // Icecast advertises internal HTTP ports; match mount paths, keeping playback URLs unchanged.
+        const mounts = new Map(sources.map(source => [new URL(source.listenurl).pathname, source]));
+        buttons.forEach(button => {
+          const source = mounts.get(new URL(button.dataset.url).pathname);
+          button.dataset.availability = source ? 'online' : 'offline';
+          button.querySelector('.availability').textContent = source ? '● Online' : '○ Offline';
+          const description = button.querySelector('p');
+          if (source) {
+            if (typeof source.server_name === 'string' && source.server_name.trim()) {
+              button.dataset.name = source.server_name;
+              button.querySelector('h2').textContent = source.server_name;
+              if (selected === button) title.textContent = source.server_name;
+            }
+            description.textContent = typeof source.server_description === 'string' && source.server_description.trim()
+              ? source.server_description : 'This stream is online. Select it to listen.';
+          } else {
+            description.textContent = 'Currently offline. Check back soon — availability updates automatically.';
+          }
+        });
+        availabilityNote.textContent = 'Checked at ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}) + ' · Updates every 30 seconds.';
+      } catch (error) {
+        buttons.forEach(button => {
+          button.dataset.availability = 'unknown';
+          button.querySelector('.availability').textContent = 'Status unknown';
+          button.querySelector('p').textContent = 'Availability could not be checked. You can still try listening.';
+        });
+        availabilityNote.textContent = 'Unable to check the server. Retrying every 30 seconds; you can still select a stream.';
+      } finally {
+        clearTimeout(timeout);
+        checking = false;
+      }
+    }
+    refreshAvailability();
+    setInterval(() => { if (!document.hidden) refreshAvailability(); }, refreshMilliseconds);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAvailability(); });
+  </script>
+</body>
+</html>
