@@ -118,6 +118,21 @@
     .intro { grid-template-columns:1fr; gap:20px; align-items:center; text-align:center; }
     .intro h1 { font-size:clamp(26px,4.1vw,48px); font-size:min(48px,6.2cqw); }
     .intro .description { max-width:680px; margin:0 auto; }
+
+    /* Each vertical fader sits alongside its smaller triangle. */
+    .stream-shell { position:relative; container-type:inline-size; }
+    .triangle-face { width:min(74%,230px); align-self:flex-start; }
+    .stream-volume { position:absolute; right:0; top:24px; width:54px; padding:10px 4px; border:1px solid rgba(255,255,255,.65); border-radius:12px; background:rgba(243,242,234,.44); color:white; text-align:center; border-color:rgba(255,255,255,.95); box-shadow:5px 7px 0 rgba(41,59,52,.65),8px 12px 14px rgba(20,35,28,.3); text-shadow:0 1px 3px #000; }
+    .volume-label { display:flex; flex-direction:column; gap:6px; font-size:12px; }
+    .stream-volume input { display:block; writing-mode:vertical-lr; direction:rtl; width:44px; height:clamp(70px,calc(85cqw - 94px),160px); margin:8px auto 0; accent-color:#d1eb70; cursor:pointer; touch-action:none; }
+    .stream-volume:has(input:active) { background:rgba(209,235,112,.44); }
+    .stream-volume input { appearance:none; -webkit-appearance:none; background:transparent; }
+    .stream-volume input::-webkit-slider-runnable-track { width:7px; border:1px solid rgba(255,255,255,.9); border-radius:8px; background:rgba(41,59,52,.65); }
+    .stream-volume input::-webkit-slider-thumb { appearance:none; -webkit-appearance:none; width:30px; height:18px; margin-left:-12px; border:2px solid white; border-radius:5px; background:rgba(209,235,112,.75); box-shadow:3px 4px 0 rgba(41,59,52,.65); }
+    .stream-volume input::-moz-range-track { width:7px; border:1px solid white; border-radius:8px; background:rgba(41,59,52,.65); }
+    .stream-volume input::-moz-range-thumb { width:30px; height:18px; border:2px solid white; border-radius:5px; background:rgba(209,235,112,.75); box-shadow:3px 4px 0 rgba(41,59,52,.65); }
+    .stream-volume input:focus-visible { outline:3px solid white; outline-offset:3px; border-radius:6px; }
+    @media(max-width:900px) and (min-width:721px) { .stream-volume { top:0; } }
   </style>
 </head>
 <body>
@@ -148,17 +163,32 @@
           <span class="stream-top"><span>CHANNEL 01 · LYDSAT A</span><span class="arrow" aria-hidden="true">↗</span></span>
           <span class="availability">Checking…</span>
           <p>Audio stream / A</p><span class="stream-action">Listen to stream →</span>
-        </div></button></div>
+        </div></button>
+          <div class="stream-volume">
+            <div class="volume-label"><label for="volume-a">Volume</label><output id="volume-value-a" for="volume-a">100%</output></div>
+            <input id="volume-a" type="range" min="0" max="100" step="1" value="100" aria-label="Volume for stream A" aria-valuetext="100 percent">
+          </div>
+        </div>
         <div class="stream-shell"><button class="stream" type="button" data-name="Lydsat B" data-background="b" data-url="https://icecast.projects.cavi.au.dk/lydsatb" aria-pressed="false" aria-controls="audio"><span class="triangle-face"><svg class="triangle-art" viewBox="0 0 240 276" aria-hidden="true" focusable="false"><polygon class="triangle-depth" points="235.37,138 248.37,156 18,289 5,271"/><polygon class="triangle-depth-pressed" points="235.37,138 240.37,145 10,278 5,271"/><polygon class="triangle-surface" points="5,5 235.37,138 5,271"/></svg><h2>Lydsat B</h2></span><div class="stream-content">
           <span class="stream-top"><span>CHANNEL 02 · LYDSAT B</span><span class="arrow" aria-hidden="true">↗</span></span>
           <span class="availability">Checking…</span>
           <p>Audio stream / B</p><span class="stream-action">Listen to stream →</span>
-        </div></button></div>
+        </div></button>
+          <div class="stream-volume">
+            <div class="volume-label"><label for="volume-b">Volume</label><output id="volume-value-b" for="volume-b">100%</output></div>
+            <input id="volume-b" type="range" min="0" max="100" step="1" value="100" aria-label="Volume for stream B" aria-valuetext="100 percent">
+          </div>
+        </div>
         <div class="stream-shell"><button class="stream" type="button" data-name="AU SoundSatellite No.3" data-background="c" data-url="https://icecast.projects.cavi.au.dk/lydsatc" aria-pressed="false" aria-controls="audio"><span class="triangle-face"><svg class="triangle-art" viewBox="0 0 240 276" aria-hidden="true" focusable="false"><polygon class="triangle-depth" points="235.37,138 248.37,156 18,289 5,271"/><polygon class="triangle-depth-pressed" points="235.37,138 240.37,145 10,278 5,271"/><polygon class="triangle-surface" points="5,5 235.37,138 5,271"/></svg><h2>AU SoundSatellite No.3</h2></span><div class="stream-content">
           <span class="stream-top"><span>CHANNEL 03 · LYDSAT C</span><span class="arrow" aria-hidden="true">↗</span></span>
           <span class="availability">Checking…</span>
           <p>Location Gyllingnaes, East Jutland. Garden birds hanging out in sheltered feeding nest</p><span class="stream-action">Listen to stream →</span>
-        </div></button></div>
+        </div></button>
+          <div class="stream-volume">
+            <div class="volume-label"><label for="volume-c">Volume</label><output id="volume-value-c" for="volume-c">100%</output></div>
+            <input id="volume-c" type="range" min="0" max="100" step="1" value="100" aria-label="Volume for stream C" aria-valuetext="100 percent">
+          </div>
+        </div>
       </section>
       <p id="availability-note" role="status" aria-live="polite">Checking stream availability…</p>
       <section class="player" aria-label="Audio player">
@@ -205,6 +235,32 @@
     const stop = document.getElementById('stop');
     const buttons = [...document.querySelectorAll('.stream')];
     let selected = null;
+
+    const streamVolumes = new Map(buttons.map(button => [button, 1]));
+    function showVolume(button, level) {
+      const key = button.dataset.background;
+      const percent = Math.round(level * 100);
+      document.getElementById('volume-' + key).value = percent;
+      document.getElementById('volume-' + key).setAttribute('aria-valuetext', percent === 0 ? 'Muted' : percent + ' percent');
+      document.getElementById('volume-value-' + key).textContent = percent + '%';
+    }
+    buttons.forEach(button => {
+      document.getElementById('volume-' + button.dataset.background).addEventListener('input', event => {
+        const level = Number(event.target.value) / 100;
+        streamVolumes.set(button, level);
+        showVolume(button, level);
+        if (selected === button) {
+          audio.volume = level;
+          audio.muted = false;
+        }
+      });
+    });
+    // Keep the active fader in sync with the browser audio controls as well.
+    audio.addEventListener('volumechange', () => {
+      if (!selected) return;
+      streamVolumes.set(selected, audio.volume);
+      showVolume(selected, audio.muted ? 0 : audio.volume);
+    });
     let generation = 0;
     let connectionTimer;
     const say = message => { status.textContent = message; };
@@ -223,6 +279,9 @@
       selected = null;
       audio.pause();
       selected = button;
+      audio.volume = streamVolumes.get(button);
+      audio.muted = false;
+      showVolume(button, audio.volume);
       buttons.forEach(item => {
         const active = item === button;
         item.setAttribute('aria-pressed', String(active));
