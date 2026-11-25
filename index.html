@@ -135,6 +135,8 @@
     .stream-volume input::-moz-range-thumb { width:30px; height:18px; border:2px solid white; border-radius:5px; background:rgba(209,235,112,.75); box-shadow:3px 4px 0 rgba(41,59,52,.65); }
     .stream-volume input:focus-visible { outline:3px solid white; outline-offset:3px; border-radius:6px; }
     @media(max-width:900px) and (min-width:721px) { .stream-volume { top:0; } }
+    .mix-help { font-size:14px; line-height:1.5; }
+    .player-controls { justify-content:space-between; }
   </style>
 </head>
 <body>
@@ -194,13 +196,13 @@
       </section>
       <p id="availability-note" role="status" aria-live="polite">Checking stream availability…</p>
       <section class="player" aria-label="Audio player">
-        <div><p class="eyebrow">Your listening space</p><p class="player-title" id="now-playing"></p><p id="status" role="status" aria-live="polite">Select a stream to start listening.</p></div>
-        <div class="player-controls"><audio id="audio" controls preload="none" aria-label="Selected stream audio player">Your browser does not support HTML audio.</audio><button id="stop" type="button" disabled>Stop</button></div>
+        <div><p class="eyebrow">Your listening space</p><p class="player-title" id="now-playing"></p><p id="status" role="status" aria-live="polite">Select one or more streams to start listening.</p></div>
+        <div class="player-controls"><span class="mix-help">Use the three faders to adjust the mix.</span><button id="stop" type="button" disabled>Stop all</button></div>
       </section>
       <section class="notes" aria-labelledby="about-title">
         <h2 id="about-title">About the network</h2>
         <!-- EDIT: Add context about the project, locations, or what listeners can expect here. -->
-        <p>Each channel offers a different connection to the audio network. Move between streams to explore, or stay with one and let it unfold. Streams may occasionally be offline; if one is unavailable, try another or return later.</p>
+        <p>Each channel offers a different connection to the audio network. Listen to one stream or combine several, using each volume fader to adjust the mix. Streams may occasionally be offline; if one is unavailable, try another or return later.</p>
       </section>
       <noscript><p>Enable JavaScript to use the stream buttons, or open <a href="https://icecast.projects.cavi.au.dk/lydsata">Lydsat A</a>, <a href="https://icecast.projects.cavi.au.dk/lydsatb">Lydsat B</a>, or <a href="https://icecast.projects.cavi.au.dk/lydsatc">Lydsat C</a> directly.</p></noscript>
     </main>
@@ -231,14 +233,19 @@
     document.addEventListener('fullscreenchange', updateFullscreenButton);
     updateFullscreenButton();
 
-    const audio = document.getElementById('audio');
     const status = document.getElementById('status');
     const title = document.getElementById('now-playing');
     const stop = document.getElementById('stop');
     const buttons = [...document.querySelectorAll('.stream')];
-    let selected = null;
-
-    const streamVolumes = new Map(buttons.map(button => [button, 1]));
+    const players = new Map();
+    function updateMix() {
+      const active = buttons.filter(button => players.get(button).active);
+      title.textContent = active.map(button => button.dataset.name).join(' + ');
+      stop.disabled = active.length === 0;
+      status.textContent = active.length
+        ? active.map(button => button.dataset.name + ': ' + players.get(button).state).join(' · ')
+        : 'Select one or more streams to start listening.';
+    }
     function showVolume(button, level) {
       const key = button.dataset.background;
       const percent = Math.round(level * 100);
@@ -246,82 +253,82 @@
       document.getElementById('volume-' + key).setAttribute('aria-valuetext', percent === 0 ? 'Muted' : percent + ' percent');
       document.getElementById('volume-value-' + key).textContent = percent + '%';
     }
-    buttons.forEach(button => {
-      document.getElementById('volume-' + button.dataset.background).addEventListener('input', event => {
-        const level = Number(event.target.value) / 100;
-        streamVolumes.set(button, level);
-        showVolume(button, level);
-        if (selected === button) {
-          audio.volume = level;
-          audio.muted = false;
-        }
-      });
-    });
-    // Keep the active fader in sync with the browser audio controls as well.
-    audio.addEventListener('volumechange', () => {
-      if (!selected) return;
-      streamVolumes.set(selected, audio.volume);
-      showVolume(selected, audio.muted ? 0 : audio.volume);
-    });
-    let generation = 0;
-    let connectionTimer;
-    const say = message => { status.textContent = message; };
-    function clearTimer() { clearTimeout(connectionTimer); }
-    // Selection changes the scenery even if the chosen audio stream is offline.
     function selectBackground(button) {
       document.querySelectorAll('.landscape').forEach(image => {
         image.classList.toggle('is-active', image.id === 'background-' + button.dataset.background);
       });
     }
-    function selectStream(button) {
-      if (selected === button) { stopPlayback(); return; }
+    function stopStream(button, message = 'Listen to stream →') {
+      const player = players.get(button);
+      player.active = false;
+      ++player.generation;
+      clearTimeout(player.timer);
+      player.audio.pause();
+      player.audio.removeAttribute('src');
+      player.audio.load();
+      button.setAttribute('aria-pressed', 'false');
+      button.querySelector('.stream-action').textContent = message;
+      updateMix();
+    }
+    function startStream(button) {
+      const player = players.get(button);
+      if (player.active) { stopStream(button); return; }
+      const attempt = ++player.generation;
+      player.active = true;
+      player.state = 'connecting';
+      button.setAttribute('aria-pressed', 'true');
+      button.querySelector('.stream-action').textContent = 'Tap again to stop ■';
       selectBackground(button);
-      const attempt = ++generation;
-      clearTimer();
-      selected = null;
-      audio.pause();
-      selected = button;
-      audio.volume = streamVolumes.get(button);
-      audio.muted = false;
-      showVolume(button, audio.volume);
-      buttons.forEach(item => {
-        const active = item === button;
-        item.setAttribute('aria-pressed', String(active));
-        item.querySelector('.stream-action').textContent = active ? 'Tap again to stop ■' : 'Listen to stream →';
-      });
-      title.textContent = button.dataset.name;
-      stop.disabled = false;
-      audio.src = button.dataset.url;
-      audio.load();
-      say('Connecting to ' + button.dataset.name + '…');
-      connectionTimer = setTimeout(() => {
-        if (attempt === generation) say('This is taking longer than expected. Try another stream, or tap this triangle to stop and tap again to retry.');
+      player.audio.src = button.dataset.url;
+      player.audio.load();
+      updateMix();
+      player.timer = setTimeout(() => {
+        if (player.active && player.generation === attempt) {
+          player.state = 'still connecting — tap to stop and retry';
+          updateMix();
+        }
       }, 15000);
-      audio.play().catch(error => {
-        if (attempt !== generation || error.name === 'AbortError') return;
-        clearTimer();
-        say(error.name === 'NotAllowedError' ? 'Press play in the audio player to begin.' : 'Unable to play this stream. It may be offline or unsupported. Try another channel, or tap this triangle to stop and tap again to retry.');
+      player.audio.play().catch(error => {
+        if (!player.active || attempt !== player.generation || error.name === 'AbortError') return;
+        stopStream(button, error.name === 'NotAllowedError' ? 'Playback blocked — tap to retry' : 'Stream unavailable — tap to retry');
       });
     }
-    buttons.forEach(button => button.addEventListener('click', () => selectStream(button)));
-    audio.addEventListener('playing', () => { if (selected) { clearTimer(); say('Playing ' + selected.dataset.name + '.'); } });
-    audio.addEventListener('waiting', () => { if (selected) say('Buffering audio…'); });
-    audio.addEventListener('pause', () => { if (selected && !audio.error) { clearTimer(); say('Paused. Press play to continue.'); } });
-    audio.addEventListener('error', () => { if (selected && audio.error) { clearTimer(); say('Stream unavailable. Try another channel, or tap this triangle to stop and tap again to retry.'); } });
-    audio.addEventListener('ended', () => { if (selected) { clearTimer(); say('The stream has ended. Tap this triangle to stop, then tap again to reconnect.'); } });
-    function stopPlayback() {
-      ++generation;
-      clearTimer();
-      selected = null;
-      audio.pause();
-      audio.removeAttribute('src');
-      audio.load();
-      buttons.forEach(button => { button.setAttribute('aria-pressed', 'false'); button.querySelector('.stream-action').textContent = 'Listen to stream →'; });
-      title.textContent = '';
-      say('Stopped. Select a stream to start listening.');
-      stop.disabled = true;
-    }
-    stop.addEventListener('click', stopPlayback);
+    buttons.forEach(button => {
+      const audio = document.createElement('audio');
+      audio.id = 'audio-' + button.dataset.background;
+      audio.preload = 'none';
+      audio.hidden = true;
+      button.closest('.stream-shell').appendChild(audio);
+      button.setAttribute('aria-controls', audio.id);
+      const player = { audio, active:false, generation:0, state:'stopped', timer:null };
+      players.set(button, player);
+      button.addEventListener('click', () => startStream(button));
+      document.getElementById('volume-' + button.dataset.background).addEventListener('input', event => {
+        audio.volume = Number(event.target.value) / 100;
+        audio.muted = false;
+        showVolume(button, audio.volume);
+      });
+      audio.addEventListener('volumechange', () => showVolume(button, audio.muted ? 0 : audio.volume));
+      audio.addEventListener('playing', () => {
+        if (!player.active) return;
+        clearTimeout(player.timer);
+        player.state = 'playing';
+        updateMix();
+      });
+      audio.addEventListener('waiting', () => {
+        if (!player.active) return;
+        player.state = 'buffering';
+        updateMix();
+      });
+      audio.addEventListener('error', () => {
+        if (player.active && audio.error) stopStream(button, 'Stream unavailable — tap to retry');
+      });
+      audio.addEventListener('ended', () => {
+        if (player.active) stopStream(button, 'Stream ended — tap to reconnect');
+      });
+    });
+    stop.addEventListener('click', () => buttons.forEach(button => stopStream(button)));
+    updateMix();
 
     // Read Icecast metadata without connecting to or interrupting the audio streams.
     const availabilityNote = document.getElementById('availability-note');
@@ -352,7 +359,7 @@
             if (typeof source.server_name === 'string' && source.server_name.trim()) {
               button.dataset.name = source.server_name;
               button.querySelector('h2').textContent = source.server_name;
-              if (selected === button) title.textContent = source.server_name;
+              updateMix();
             }
             description.textContent = typeof source.server_description === 'string' && source.server_description.trim()
               ? source.server_description : 'This stream is online. Select it to listen.';
